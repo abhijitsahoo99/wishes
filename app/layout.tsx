@@ -1,7 +1,7 @@
 import "./globals.css";
 import type { Metadata } from "next";
 import { Instrument_Serif } from "next/font/google";
-import "./globals.css";
+import { Providers } from "./providers";
 import Navbar from "./components/Navbar";
 
 const instrumentSerif = Instrument_Serif({
@@ -11,6 +11,7 @@ const instrumentSerif = Instrument_Serif({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("http://localhost:3000"),
   title: "Birthday Wishboard",
   description:
     "Create and share beautiful birthday wishboards with friends and family.",
@@ -44,10 +45,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${instrumentSerif.variable}`}>
+    <html lang="en" className={instrumentSerif.variable}>
       <body className="font-instrument-serif">
-        <Navbar />
-        {children}
+        <Providers>
+          <Navbar />
+          {children}
+        </Providers>
       </body>
     </html>
   );

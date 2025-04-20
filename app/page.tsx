@@ -1,8 +1,15 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 export default function Home() {
+  const router = useRouter();
+
+  const handleGetStarted = () => {
+    router.push("/auth/signin");
+  };
+
   return (
     <main
       className="h-screen w-full bg-cover bg-center bg-no-repeat flex flex-col items-center justify-center fixed top-0 left-0"
@@ -22,12 +29,12 @@ export default function Home() {
           grows with you each year.
         </p>
 
-        <Link
-          href="/memories"
+        {/* <button
+          onClick={handleGetStarted}
           className="inline-block bg-purple-600 text-white rounded-lg py-3 px-8 font-medium text-xl hover:bg-purple-700 transition"
         >
           Get Started
-        </Link>
+        </button> */}
       </div>
 
       {/* footer */}
