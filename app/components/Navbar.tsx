@@ -22,14 +22,24 @@ export default function Navbar() {
             home
           </Link>
           {session && (
-            <Link
-              href="/memories"
-              className={`text-xl text-black hover:opacity-70 transition-opacity ${
-                pathname === "/memories" ? "border-b-2 border-black" : ""
-              }`}
-            >
-              memories
-            </Link>
+            <>
+              <Link
+                href="/memories"
+                className={`text-xl text-black hover:opacity-70 transition-opacity ${
+                  pathname === "/memories" ? "border-b-2 border-black" : ""
+                }`}
+              >
+                memories
+              </Link>
+              <Link
+                href="/history"
+                className={`text-xl text-black hover:opacity-70 transition-opacity ${
+                  pathname === "/history" ? "border-b-2 border-black" : ""
+                }`}
+              >
+                history
+              </Link>
+            </>
           )}
         </div>
 
@@ -54,7 +64,7 @@ export default function Navbar() {
                     {session.user?.name?.[0] || "U"}
                   </div>
                 )}
-                <span className="text-black">{session.user?.name}</span>
+                <span className="text-black text-lg">{session.user?.name}</span>
               </div>
               <button
                 onClick={() => signOut({ callbackUrl: "/" })}

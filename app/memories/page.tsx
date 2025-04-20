@@ -2,11 +2,14 @@
 import React, { useRef, useState, useEffect } from "react";
 import Image from "next/image";
 import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 export default function BirthdayMoodboard() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const editId = searchParams.get("edit");
+
   const [images, setImages] = useState<string[]>([]);
   const [name, setName] = useState("");
   const boardRef = useRef<HTMLDivElement>(null);
@@ -17,20 +20,39 @@ export default function BirthdayMoodboard() {
   const [uploadedImages, setUploadedImages] = useState<
     { id: string; url: string }[]
   >([]);
+  const [isEditing, setIsEditing] = useState(false);
 
   useEffect(() => {
     if (status === "unauthenticated") {
       router.push("/auth/signin");
+    } else if (status === "authenticated" && editId) {
+      fetchWishboard(editId);
     }
-  }, [status, router]);
+  }, [status, router, editId]);
 
-  if (status === "loading") {
-    return (
-      <div className="min-h-screen w-full bg-cover bg-center bg-no-repeat flex flex-col items-center justify-center">
-        <div className="w-12 h-12 border-4 border-purple-600 border-t-transparent rounded-full animate-spin"></div>
-      </div>
-    );
-  }
+  const fetchWishboard = async (id: string) => {
+    try {
+      setIsLoading(true);
+      const response = await fetch(`/api/wishboards/${id}`);
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch wishboard");
+      }
+
+      const data = await response.json();
+      setName(data.name || "");
+      setImages(data.images.map((img: any) => img.url));
+      setUploadedImages(
+        data.images.map((img: any) => ({ id: img.id, url: img.url }))
+      );
+      setIsEditing(true);
+    } catch (err) {
+      console.error("Error fetching wishboard:", err);
+      alert("Failed to load wishboard. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   /* --------------------------- handlers --------------------------- */
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -73,10 +95,14 @@ export default function BirthdayMoodboard() {
 
     setIsSharing(true);
     try {
-      // Save the wishboard to the database
+      // Save or update the wishboard to the database
       setIsSaving(true);
-      const response = await fetch("/api/wishboards", {
-        method: "POST",
+      const url = isEditing ? `/api/wishboards/${editId}` : "/api/wishboards";
+
+      const method = isEditing ? "PATCH" : "POST";
+
+      const response = await fetch(url, {
+        method,
         headers: {
           "Content-Type": "application/json",
         },
@@ -93,12 +119,12 @@ export default function BirthdayMoodboard() {
       }
 
       const data = await response.json();
-      const wishboardId = data.id;
+      const wishboardId = isEditing ? editId : data.id;
 
       // Generate the share URL
-      const url = `${window.location.origin}/view/${wishboardId}`;
-      setShareUrl(url);
-      await navigator.clipboard.writeText(url);
+      const shareUrl = `${window.location.origin}/view/${wishboardId}`;
+      setShareUrl(shareUrl);
+      await navigator.clipboard.writeText(shareUrl);
       alert("Link copied to clipboard!");
     } catch (error) {
       console.error("Error sharing:", error);
@@ -159,7 +185,7 @@ export default function BirthdayMoodboard() {
       <div className="w-full min-h-screen backdrop-blur-sm flex flex-col items-center py-12 px-4">
         {/* header */}
         <h1 className="text-3xl font-bold text-gray-800 mb-8">
-          Birthday Wishboard
+          {isEditing ? "Edit Wishboard" : "Birthday Wishboard"}
         </h1>
         {/* controls */}
         <div className="w-full max-w-xl flex flex-col gap-4 mb-6">
@@ -202,6 +228,8 @@ export default function BirthdayMoodboard() {
             >
               {isSharing || isSaving ? (
                 <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mx-auto"></div>
+              ) : isEditing ? (
+                "Update board"
               ) : (
                 "Share board"
               )}

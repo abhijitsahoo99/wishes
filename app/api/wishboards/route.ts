@@ -1,63 +1,14 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { prisma } from "@/lib/prisma";
-import { authOptions } from "../../../lib/auth";
-
-export async function POST(request: Request) {
-  try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const { name, images } = await request.json();
-
-    if (!name || !images || !Array.isArray(images)) {
-      return NextResponse.json(
-        { error: "Invalid request data" },
-        { status: 400 }
-      );
-    }
-
-    // Create the wishboard
-    const wishboard = await prisma.wishboard.create({
-      data: {
-        name,
-        userId: session.user.id,
-      },
-    });
-
-    // Create the images
-    const imagePromises = images.map((image: { url: string }) => {
-      return prisma.image.create({
-        data: {
-          url: image.url,
-          wishboardId: wishboard.id,
-        },
-      });
-    });
-
-    await Promise.all(imagePromises);
-
-    return NextResponse.json(wishboard);
-  } catch (error) {
-    console.error("Error creating wishboard:", error);
-    return NextResponse.json(
-      { error: "Error creating wishboard" },
-      { status: 500 }
-    );
-  }
-}
+import { authOptions } from "@/lib/auth";
 
 export async function GET(request: Request) {
   try {
-    const session = await getServerSession();
+    const session = await getServerSession(authOptions);
 
     if (!session?.user) {
-      return NextResponse.json(
-        { error: "You must be logged in to view wishboards" },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const wishboards = await prisma.wishboard.findMany({
@@ -72,11 +23,70 @@ export async function GET(request: Request) {
       },
     });
 
-    return NextResponse.json({ wishboards });
+    return NextResponse.json(wishboards);
   } catch (error) {
     console.error("Error fetching wishboards:", error);
     return NextResponse.json(
       { error: "Failed to fetch wishboards" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function POST(request: Request) {
+  try {
+    const session = await getServerSession(authOptions);
+
+    if (!session?.user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const body = await request.json();
+    const { name, images } = body;
+
+    if (!name) {
+      return NextResponse.json({ error: "Name is required" }, { status: 400 });
+    }
+
+    // Create the wishboard
+    const wishboard = await prisma.wishboard.create({
+      data: {
+        name,
+        userId: session.user.id,
+      },
+      include: {
+        images: true,
+      },
+    });
+
+    // If images are provided, create them
+    if (images && Array.isArray(images) && images.length > 0) {
+      await prisma.image.createMany({
+        data: images.map((image: { url: string; alt: string }) => ({
+          url: image.url,
+          alt: image.alt,
+          wishboardId: wishboard.id,
+        })),
+      });
+
+      // Fetch the wishboard with images
+      const wishboardWithImages = await prisma.wishboard.findUnique({
+        where: {
+          id: wishboard.id,
+        },
+        include: {
+          images: true,
+        },
+      });
+
+      return NextResponse.json(wishboardWithImages);
+    }
+
+    return NextResponse.json(wishboard);
+  } catch (error) {
+    console.error("Error creating wishboard:", error);
+    return NextResponse.json(
+      { error: "Failed to create wishboard" },
       { status: 500 }
     );
   }
