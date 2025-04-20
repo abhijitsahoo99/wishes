@@ -91,6 +91,12 @@ export default function BirthdayMoodboard() {
     }, "image/png");
   };
 
+  const handleRemoveImage = (indexToRemove: number) => {
+    setImages((prevImages) =>
+      prevImages.filter((_, index) => index !== indexToRemove)
+    );
+  };
+
   /* ----------------------------- view ----------------------------- */
   return (
     <div
@@ -107,7 +113,6 @@ export default function BirthdayMoodboard() {
         <h1 className="text-3xl font-bold text-gray-800 mb-8">
           Birthday Wishboard
         </h1>
-
         {/* controls */}
         <div className="w-full max-w-xl flex flex-col gap-4 mb-6">
           {/* name field */}
@@ -116,7 +121,7 @@ export default function BirthdayMoodboard() {
             placeholder="Your name"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="border rounded-lg p-3 w-full focus:outline-none focus:ring-2 focus:ring-purple-400"
+            className="border rounded-lg p-3 w-full focus:outline-none focus:ring-2 focus:ring-purple-400 text-black"
           />
 
           {/* uploader */}
@@ -162,13 +167,20 @@ export default function BirthdayMoodboard() {
             {images.map((src, idx) => (
               <div
                 key={idx}
-                className="relative w-full aspect-video bg-gray-100 overflow-hidden rounded-xl shadow-md"
+                className="relative w-full aspect-video bg-gray-100 overflow-hidden rounded-xl shadow-md group"
               >
                 <img
                   src={src}
                   alt={`wish-${idx}`}
                   className="object-cover w-full h-full"
                 />
+                <button
+                  onClick={() => handleRemoveImage(idx)}
+                  className="absolute top-2 right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 hover:bg-red-600"
+                  aria-label="Remove image"
+                >
+                  ×
+                </button>
               </div>
             ))}
           </div>
